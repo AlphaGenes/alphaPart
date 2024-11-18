@@ -95,33 +95,21 @@
 #'   column(s) holding breeding Values.
 #' @param colBy Numeric or character, position or name of a column
 #'   holding group information (see details).
-#' @param center Logical, if \code{center=TRUE} detect a shift in base
-#'   population mean and attributes it as parent average effect rather
-#'   than Mendelian sampling effect, otherwise, if center=FALSE, the base
-#'   population values are only accounted as Mendelian sampling
-#'   effect. Default is \code{center = TRUE}.
-#' @param scaleEBV a list with two arguments defining whether is 
-#' appropriate to center and/or scale the \code{colBV} columns in respect to 
-#' the base population. The list may contain the following components:
 #' 
-#' * `center`: a logical value 
-#' * `scale`: a logical value. If `center = TRUE` and `scale = TRUE` then the 
-#'  base population is set to has zero mean and unit variance.
-#'
 #' @example inst/examples/examples_AlphaPart.R
 #' @return An object of class \code{AlphaPart}, which can be used in
 #'   further analyses - there is a handy summary method
 #'   (\code{\link[AlphaPart]{summary.AlphaPart}} works on objects of
 #'   \code{AlphaPart} class) and a plot method for its output
 #'   (\code{\link[AlphaPart]{plot.summaryAlphaPart}} works on objects of
-#'   \code{summaryAlphaPart} class).  Class \code{AlphaPart} is a
+#'   \code{summaryAlphaPart} class). Class \code{AlphaPart} is a
 #'   list. The first \code{length(colBV)} components (one for each trait
 #'   and named with trait label, say trt) are data frames. Each
-#'   data.frame contains: 
+#'   data.frame contains:
 #'   
-#'   * `x` columns from initial data `x` 
+#'   * `x` columns from initial data `x`
 #'   * `trt_pa` parent average 
-#'   * `trt_w`Mendelian sampling term
+#'   * `trt_ms` Mendelian sampling term
 #'   * `trt_path1, trt_path2, ...` breeding value partitions
 #'
 #' The last component of returned object is also a list named
@@ -140,7 +128,7 @@
 #' \code{\link[AlphaPart]{summary.AlphaPart}} for details.
 #'
 #' If \code{profile=TRUE}, profiling info is printed on screen to spot
-#' any computational bottlenecks.
+#' computational bottlenecks.
 #'
 #' @useDynLib AlphaPart, .registration = TRUE
 #' @importFrom Rcpp sourceCpp
@@ -151,18 +139,16 @@
 #' @importFrom tibble is_tibble
 #'
 #' @export
-
-AlphaPart <- function (x, pathNA=FALSE, recode=TRUE, unknown= NA,
+AlphaPart <- function (x, pathNA=FALSE, recode=TRUE, unknown=NA,
                        sort=TRUE, verbose=1, profile=FALSE,
                        printProfile="end", pedType="IPP", colId=1,
                        colFid=2, colMid=3, colPath=4, colBV=5:ncol(x),
-                       colBy=NULL, center = TRUE, 
-                       scaleEBV = list()) {
-  ## Test if the data is a data.frame
+                       colBy=NULL) {
+  # Test if the data is a data.frame
   if(is_tibble(x)){
     x <- as.data.frame(x)
   }
-  ## --- Setup ---
+  # --- Setup ---
   test <- (length(colId) > 1 | length(colFid) > 1 | length(colMid) > 1 | length(colPath) > 1 | length(colBy) > 1)
   if (test) {
     stop("arguments 'colId', 'colFid', 'colMid', 'colPath', and 'colBy' must be of length 1")
@@ -258,50 +244,36 @@ AlphaPart <- function (x, pathNA=FALSE, recode=TRUE, unknown= NA,
     testN <- NULL # not needed anymore
   }
   #=====================================================================
-  ## --- Sort and recode pedigree ---
+  # --- Sort and recode pedigree ---
   #=====================================================================
-  ## Make sure that identifications are numeric if  recode=FALSE
+  # Make sure that identifications are numeric if recode=FALSE
   test <- !sapply(x[, c(colId, colFid, colMid)], is.numeric) & !recode
   if (any(test)) {
     stop("argument 'recode' must be 'TRUE' when identif ications in 'x' are not numeric")
   }
   #---------------------------------------------------------------------
-  ## Make sure that colBV columns are numeric
+  # Make sure that colBV columns are numeric
   test <- !sapply(x[, c(colBV)], is.numeric)
   if (any(test)) {
     stop("colBV columns must be numeric!")
     str(x)
   }
   #---------------------------------------------------------------------
-  ## Sort so that parents precede children
+  # Sort so that parents precede children
   if (sort) {
     recode <- TRUE
     x <- x[order(orderPed(ped=x[, c(colId, colFid, colMid)])), ]
   }
-  #=======================================================================
-  # Centering  to make founders has mean zero
-  #=======================================================================
-  controlvals <- getScale()
-  if (!missing(scaleEBV)) {
-    controlvals[names(scaleEBV)] <- scaleEBV
-  }
-  if(controlvals$center == TRUE | controlvals$scale == TRUE){
-    x[, colBV] <- sEBV(y = x[,c(colId, colFid, colMid, colBV)], 
-                       center = controlvals$center, 
-                       scale = controlvals$scale, 
-                       recode = recode, unknown = unknown)
-  }
-  #=======================================================================
   #---------------------------------------------------------------------
-  ## Recode all ids to 1:n
+  # Recode all ids to 1:n
   if (recode) {
     y <- cbind(id=seq_len(nrow(x)),
                fid=match(x[, colFid], x[, colId], nomatch=0),
                mid=match(x[, colMid], x[, colId], nomatch=0))
-    colnames(y) <- c(colId,colFid,colMid)
+    colnames(y) <- c(colId, colFid, colMid)
   } else {
     y <- as.matrix(x[, c(colId, colFid, colMid)])
-    ## Make sure we have 0 when recoded data is provided
+    # Make sure we have 0 when recoded data is provided
     if (is.na(unknown)) {
       y[, c(colFid, colMid)] <- NAToUnknown(x=y[, c(colFid, colMid)],
                                             unknown=0)
@@ -313,19 +285,18 @@ AlphaPart <- function (x, pathNA=FALSE, recode=TRUE, unknown= NA,
       }
     }
   }
-  y <- cbind(y, as.matrix(x[, colBV]))
   #=====================================================================
-  ## Test if father and mother codes preceede children code -
-  ## computational engine needs this
+  # Test if father and mother codes precede children codes -
+  # (implicit in AlphaPartDrop() algorithm!)
   #=====================================================================
-  test <- y[, 2] >= y[, 1]
+  test <- y[, colFid] >= y[, colId]
   if (any(test)) {
     print(x[test, ])
     print(sum(test))
     stop("sorting/recoding problem: parent (father in this case) code must preceede children code - use arguments 'sort' and/or 'recode'")
   }
   #---------------------------------------------------------------------
-  test <- y[, 3] >= y[, 1]
+  test <- y[, colMid] >= y[, colId]
   if (any(test)) {
     print(x[test, ])
     print(sum(test))
@@ -337,21 +308,21 @@ AlphaPart <- function (x, pathNA=FALSE, recode=TRUE, unknown= NA,
                              time=Sys.time(), mem=(object.size(x) + object.size(y)))
   }
   #=====================================================================
-  ## --- Dimensions and Paths ---
+  # --- Dimensions and Paths ---
   #=====================================================================
-  ## Pedigree size
+  # Pedigree size
   nI <- nrow(x)
   #---------------------------------------------------------------------
-  ## Traits
+  # Traits
   lT <- colnames(x[, colBV, drop=FALSE])
   nT <- length(lT) # number of traits
-  colnames(y)[4:ncol(y)] <- lT
   #---------------------------------------------------------------------
-  ## Missing values
-  nNA <- apply(x[, colBV, drop=FALSE], 2, function(z) sum(is.na(z)))
+  # Missing values
+  nNA <- apply(X = x[, colBV, drop=FALSE], MARGIN = 2,
+               FUN = function(z) sum(is.na(z)))
   names(nNA) <- lT
   #---------------------------------------------------------------------
-  ## Paths - P matrix
+  # Paths - P matrix
   test <- is.na(x[, colPath])
   if (any(test)) {
     if (pathNA) {
@@ -366,7 +337,7 @@ AlphaPart <- function (x, pathNA=FALSE, recode=TRUE, unknown= NA,
   nP <- length(lP) # number of paths
   P <- as.integer(x[, colPath]) - 1
   #---------------------------------------------------------------------
-  ## Groups
+  # Groups
   if (groupSummary) {
     test <- is.na(x[, colBy])
     if (any(test)) {
@@ -377,7 +348,9 @@ AlphaPart <- function (x, pathNA=FALSE, recode=TRUE, unknown= NA,
         stop("unknown (missing) value for group not allowed; use 'pathNA=TRUE'")
       }
     }
-    if (!is.factor(x[, colBy])) x[, colBy] <- factor(x[, colBy])
+    if (!is.factor(x[, colBy])) {
+      x[, colBy] <- factor(x[, colBy])
+    }
     lG <- levels(x[, colBy])
     nG <- length(lG)
     g <- as.integer(x[, colBy])
@@ -395,28 +368,44 @@ AlphaPart <- function (x, pathNA=FALSE, recode=TRUE, unknown= NA,
     print(nNA)
   }
 
-  if (any(nNA > 0)) stop("unknown (missing) values are propagated through the pedigree and therefore not allowed")
-  nNA <- NULL # not needed anymore
+  if (any(nNA > 0)) {
+    stop("unknown (missing) values are propagated through the pedigree and therefore not allowed")
+  }
   
   if (profile) {
     timeRet <- .profilePrint(x=timeRet, task="Dimensions and Matrices P", printProfile=printProfile,
                              time=Sys.time(), mem=object.size(P))
   }
   #=====================================================================
-  ## --- Compute ---
+  # --- Compute ---
   #=====================================================================
-  ## Prepare stuff for C++
+  # Centering (implicitly assumed in the AlphaPartDrop() algorithm!)
+  # TODO: how should we handle half-founders?
+  #.      https://github.com/AlphaGenes/AlphaPart/issues/9
+  selBasePop <- y[, colFid] == 0 & y[, colMid] == 0
+  meanBasePop <- colMeans(x[selBasePop, colBV, drop = FALSE])
+  y <- cbind(y, as.matrix(x[, colBV]))
+  colnames(y)[4:ncol(y)] <- lT
+  for (trt in colBV) {
+    y[, trt] <- y[, trt] - meanBasePop[trt]
+  }
+  #---------------------------------------------------------------------  
+  # Prepare for C++
   c1 <- c2 <- 0.5
   if (pedType == "IPG") c2 <- 0.25
-  #---------------------------------------------------------------------
-  ## Add "zero" row (simplif ies computations with missing parents!)
+  # Add "zero" row (simplifies computations with missing parents!) - this
+  #   assumes that the base population mean is 0 so must centre above!
   y <- rbind(y[1, ], y)
   y[1, ] <- 0
   rownames(x) <- NULL
   P <- c(0, P)
   if (groupSummary) g <- c(0, g)
   #---------------------------------------------------------------------
-  ## Compute
+  # Compute
+  # TODO: do we just need to pass means to the algorithm and seed initial
+  #       Mendelian sampling terms with them and then everything else will
+  #       pan out well?
+  #       https://github.com/AlphaGenes/AlphaPart/issues/7
   if (!groupSummary) {
     tmp <- .Call("AlphaPartDrop",
                  c1_=c1, c2_=c2,
@@ -427,8 +416,8 @@ AlphaPart <- function (x, pathNA=FALSE, recode=TRUE, unknown= NA,
   } else {
     N <- aggregate(x=y[-1, -c(1:3)], by=list(by=x[, colBy]), FUN=length)
     tmp <- vector(mode="list", length=3)
-    names(tmp) <- c("pa", "w", "xa")
-    tmp$pa <- tmp$w <- matrix(data=0, nrow=nG+1, ncol=nT)
+    names(tmp) <- c("pa", "ms", "xa")
+    tmp$pa <- tmp$ms <- matrix(data=0, nrow=nG+1, ncol=nT)
     tmp$xa <- .Call("AlphaPartDropGroup",
                  c1_=c1, c2_=c2,
                  nI_=nI, nP_=nP, nT_=nT, nG_=nG,
@@ -436,9 +425,9 @@ AlphaPart <- function (x, pathNA=FALSE, recode=TRUE, unknown= NA,
                  PACKAGE="AlphaPart")
   }
   #---------------------------------------------------------------------
-  ## Assign nice column names
+  # Assign nice column names
   colnames(tmp$pa) <- paste(lT, "_pa", sep="")
-  colnames(tmp$w)  <- paste(lT, "_w", sep="")
+  colnames(tmp$ms) <- paste(lT, "_ms", sep="")
   colnames(tmp$xa) <- c(t(outer(lT, lP, paste, sep="_")))
 
   if (profile) {
@@ -447,30 +436,34 @@ AlphaPart <- function (x, pathNA=FALSE, recode=TRUE, unknown= NA,
                              time=Sys.time(), mem=object.size(tmp))
   }
   #=====================================================================
-  ## --- Massage results ---
+  # --- Massage results ---
   #=====================================================================
-  ## Put partitions for one trait in one object (-1 is for removal of
-  ## the "zero" row)
+  # Put partitions for one trait in one object (-1 is for removal of
+  # the "zero" row)
   ret <- vector(mode="list", length=nT+1)
   t <- 0
   colP <- colnames(tmp$pa)
-  colW <- colnames(tmp$w)
+  colW <- colnames(tmp$ms)
   colX <- colnames(tmp$xa)
-  #=====================================================================
-  # Original Values 
-  #=====================================================================
-  if (center){
-    tmp <- centerPop(y = y[-1,], colBV = colBV, path = tmp)    
-  }
-
-  #=====================================================================
-  for (j in 1:nT) { ## j <- 1
+  #---------------------------------------------------------------------
+  # TODO: Recentre, but how? Add meanBasePop to MS for founders and then
+  #   to PA for all non-founders?
+  #   path$w[-1,i] <- path$w[-1, i] - basePop * baseMean[i]
+  #   path$pa[-1, i] <- path$pa[-1, i] + basePop * y[, colBV[i]] -
+  #                     path$w[-1, i] * basePop
+  # BUT, what about the partitions!
+  #   https://github.com/AlphaGenes/AlphaPart/issues/7
+  # TODO: how should we handle half-founders?
+  #       https://github.com/AlphaGenes/AlphaPart/issues/9
+  for (j in 1:nT) { # j <- 1
     Py <- seq(t+1, t+nP)
-    ret[[j]] <- cbind(tmp$pa[-1, j], tmp$w[-1, j], tmp$xa[-1, Py])
+    ret[[j]] <- cbind(tmp$pa[-1, j] + !selBasePop * meanBasePop[j],
+                      tmp$ms[-1, j] +  selBasePop * meanBasePop[j],
+                      tmp$xa[-1, Py])
     colnames(ret[[j]]) <- c(colP[j], colW[j], colX[Py])
+    
     t <- max(Py)
   }
-  tmp <- NULL # not needed anymore
   #---------------------------------------------------------------------
   if (profile) {
     timeRet <- .profilePrint(x=timeRet, task="Massage results",
@@ -478,17 +471,17 @@ AlphaPart <- function (x, pathNA=FALSE, recode=TRUE, unknown= NA,
                              time=Sys.time(), mem=object.size(ret))
   }
   #=====================================================================
-  ## Add initial data
+  # Add initial data
   #=====================================================================
   if (!groupSummary) {
     for (i in 1:nT) {
-      ## Hassle in order to get all columns and to be able to work with
-      ##   numeric or character column "names"
+      # Hassle in order to get all columns and to be able to work with
+      #   numeric or character column "names"
       colX <- colX2 <- colnames(x)
       names(colX) <- colX; names(colX2) <- colX2
-      ## ... put current agv in the last column in original data
+      # ... put current agv in the last column in original data
       colX <- c(colX[!(colX %in% colX[colBV[i]])], colX[colBV[i]])
-      ## ... remove other traits
+      # ... remove other traits
       colX <- colX[!(colX %in% colX2[(colX2 %in% colX2[colBV]) & !
                                        (colX2 %in% colX2[colBV[i]])])]
       ret[[i]] <- cbind(x[, colX], as.data.frame(ret[[i]]))
@@ -496,12 +489,12 @@ AlphaPart <- function (x, pathNA=FALSE, recode=TRUE, unknown= NA,
     }
   }
   #---------------------------------------------------------------------
-  ## Additional (meta) info. on number of traits and paths for other
-  ## methods
+  # Additional (meta) info. on number of traits and paths for other
+  # methods
   tmp <- colnames(x); names(tmp) <- tmp
   ret[[nT+1]] <- list(path=tmp[colPath], nP=nP, lP=lP, nT=nT, lT=lT,
                       warn=NULL)
-  ## names(ret)[nT+1] <- "info"
+  # names(ret)[nT+1] <- "info"
   names(ret) <- c(lT, "info")
 
   if (profile) {
@@ -518,14 +511,13 @@ AlphaPart <- function (x, pathNA=FALSE, recode=TRUE, unknown= NA,
     }
   }
   #=====================================================================
-  ## --- Return ---
+  # --- Return ---
   #=====================================================================
   class(ret) <- c("AlphaPart", class(ret))
   if (groupSummary) {
     ret$by <- colByOriginal
     ret$N <- N
-    summary(object=ret, sums=TRUE)
-  } else {
-    ret
+    ret <- summary(object=ret, sums=TRUE)
   }
+  return(ret)
 }

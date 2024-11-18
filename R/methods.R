@@ -207,7 +207,7 @@ summary.AlphaPart <- function(object, by=NULL, FUN=mean, labelSum="Sum",
                               subset=NULL, sums=FALSE, cov = FALSE,
                               ...) {
   #---------------------------------------------------------------------
-  ## --- Setup ---
+  # --- Setup ---
   #---------------------------------------------------------------------
   groupSummary <- sums
   #---------------------------------------------------------------------
@@ -220,17 +220,17 @@ summary.AlphaPart <- function(object, by=NULL, FUN=mean, labelSum="Sum",
   #---------------------------------------------------------------------
   # Transforming FUN in a function
   test <- is.character(FUN)
-  if(test==TRUE){
-    test <- is.function(try(get(FUN),  silent = TRUE))
-    if (test == FALSE) {
-      stop("argument 'FUN' must be a function",  call.= FALSE)
+  if(test){
+    test <- is.function(try(get(FUN), silent = TRUE))
+    if (!test) {
+      stop("argument 'FUN' must be a function", call. = FALSE)
     }
-    FUN = get(FUN)
+    FUN <- get(FUN)
   }
   #---------------------------------------------------------------------
   # Test for covariance output
   test <- is.logical(cov)
-  if (test==FALSE) {
+  if (!test) {
     stop("argument 'cov' must be logical (TRUE or FALSE)", call. = FALSE)
   }
   #---------------------------------------------------------------------
@@ -247,16 +247,16 @@ summary.AlphaPart <- function(object, by=NULL, FUN=mean, labelSum="Sum",
     }
   }
   #---------------------------------------------------------------------
-  nC <- ncol(object[[1]]) ## number of columns
-  nP <- object$info$nP    ## number of paths
-  nCov <- 0               ## number of covariances
-  lP <- object$info$lP    ## names  of paths
-  nT <- object$info$nT    ## number of traits
-  lT <- object$info$lT    ## names  of traits
+  nC <- ncol(object[[1]]) # number of columns
+  nP <- object$info$nP    # number of paths
+  nCov <- 0               # number of covariances
+  lP <- object$info$lP    # names  of paths
+  nT <- object$info$nT    # number of traits
+  lT <- object$info$lT    # names  of traits
   ret <- vector(mode="list", length=nT+1)
   names(ret) <- c(lT, "info")
   #---------------------------------------------------------------------
-  ## Subset
+  # Subset
   if (!is.null(subset)) {
     object[1:nT] <- lapply(object[1:nT], FUN=function(z) z[subset, ])
   }
@@ -265,23 +265,22 @@ summary.AlphaPart <- function(object, by=NULL, FUN=mean, labelSum="Sum",
                    nT=nT, lT=lT, by=by, warn=object$info$warn,
                    labelSum=labelSum)
   #---------------------------------------------------------------------
-  ## --- Compute ---
+  # --- Compute ---
   #---------------------------------------------------------------------
   z <- ifelse (groupSummary, 1, 2)
-  for(i in 1:nT) { ## for each trait
-     ## Setup
+  for(i in 1:nT) { # for each trait
+     # Setup
      cols <- c(lT[i], paste(lT[i], lP, sep="_"))
-     checkCov <- length(cols[-1])>1 ## do not run cov if path has 1 level
+     checkCov <- length(cols[-1])>1 # do not run cov if path has 1 level
      paths <- cols
      paths[2:length(paths)] <- ret$info$lP
      paths[1] <- labelSum
 
-    ## Summarize Variance Partitioning
-    if (identical(deparse(FUN),deparse(var))) {
+    # Summarize Variance Partitioning
+    if (identical(deparse(FUN), deparse(var))) {
       . <- NULL
       if (!groupSummary) {
         if (is.null(by)) {
-          #pri length ne sme biti na.rm = TRUE
           tmp <- rep(1, times=nrow(object[[i]]))
           tmpM <- aggregate(x=object[[i]][, cols], by=list(by=tmp),
                             FUN=var,  na.rm=TRUE)
@@ -302,7 +301,7 @@ summary.AlphaPart <- function(object, by=NULL, FUN=mean, labelSum="Sum",
             tmpM <- cbind(tmpM,tmpM2)
           }
           tmpN <- aggregate(x=object[[i]][, cols[1]], by=list(by=tmp),
-                            FUN=length)
+                            FUN=length) # do not use na.rm=TRUE here!
         } else {
           tmpM <- aggregate(x=object[[i]][, cols],
                             by=list(by=object[[i]][, by]),
@@ -324,7 +323,8 @@ summary.AlphaPart <- function(object, by=NULL, FUN=mean, labelSum="Sum",
           tmpM <- cbind(tmpM,tmpM2)
           }
           tmpN <- aggregate(x=object[[i]][, cols[1]],
-                            by=list(by=object[[i]][, by]), FUN=length)
+                            by=list(by=object[[i]][, by]),
+                            FUN=length) # do not use na.rm=TRUE here!
         }
       } else {
         tmpN <- object$N[, c(1, i+1)]
@@ -333,7 +333,7 @@ summary.AlphaPart <- function(object, by=NULL, FUN=mean, labelSum="Sum",
         tmpM <- tmpM / tmpN[, 2]
       }
       #-----------------------------------------------------------------
-      ## Add nice column names
+      # Add nice column names
       colnames(tmpN) <- c(by, "N")
       count <- seq(1,length(paths))[-1]
       if(cov && checkCov) {
@@ -351,25 +351,27 @@ summary.AlphaPart <- function(object, by=NULL, FUN=mean, labelSum="Sum",
       }
       colnames(tmpM)[z:ncol(tmpM)] <- paths
       #-----------------------------------------------------------------
-      ## Combine FUN and number of records
+      # Combine FUN and number of records
       tmp <- cbind(tmpN, tmpM[, z:ncol(tmpM)])
       #-----------------------------------------------------------------
     }else {
-      ## Summarize non-variance partitioning
+      # Summarize non-variance partitioning
       if (!groupSummary) {
         if (is.null(by)) {
-          #pri length ne sme biti na.rm = TRUE
           tmp <- rep(1, times=nrow(object[[i]]))
-          tmpM <- aggregate(x=object[[i]][, cols], by=list(by=tmp),
-                            FUN=FUN,  na.rm=TRUE)
-          tmpN <- aggregate(x=object[[i]][, cols[1]], by=list(by=tmp),
-                            FUN=length)
+          tmpM <- aggregate(x=object[[i]][, cols],
+                            by=list(by=tmp),
+                            FUN=FUN, na.rm=TRUE)
+          tmpN <- aggregate(x=object[[i]][, cols[1]],
+                            by=list(by=tmp),
+                            FUN=length) # do not use na.rm=TRUE here!
         } else {
           tmpM <- aggregate(x=object[[i]][, cols],
                             by=list(by=object[[i]][, by]),
                             FUN=FUN, na.rm=TRUE)
           tmpN <- aggregate(x=object[[i]][, cols[1]],
-                            by=list(by=object[[i]][, by]), FUN=length)
+                            by=list(by=object[[i]][, by]),
+                            FUN=length) # do not use na.rm=TRUE here!
         }
       } else {
         tmpN <- object$N[, c(1, i+1)]
@@ -378,26 +380,26 @@ summary.AlphaPart <- function(object, by=NULL, FUN=mean, labelSum="Sum",
         tmpM <- tmpM / tmpN[, 2]
       }
       #-----------------------------------------------------------------
-      ## Add nice column names
+      # Add nice column names
       colnames(tmpN) <- c(by, "N")
       colnames(tmpM)[z:ncol(tmpM)] <- paths
       #-----------------------------------------------------------------
-      ## Combine FUN and number of records
+      # Combine FUN and number of records
       tmp <- cbind(tmpN, tmpM[, z:ncol(tmpM)])
       #-----------------------------------------------------------------
     }
-    ## Store
+    # Store
     ret[[i]] <- tmp
   }
   #---------------------------------------------------------------------
-  ## --- Update when var ---
+  # --- Update when var ---
   #---------------------------------------------------------------------
-  if (identical(deparse(FUN),deparse(var))) {
+  if (identical(deparse(FUN), deparse(var))) {
     ret$info$nCov <- kcount-ret$info$nP-1 # number of covariances
-    ret$info$lP <- paths[-1] ## names of paths
+    ret$info$lP <- paths[-1] # names of paths
   }
   #---------------------------------------------------------------------
-  ## --- Return ---
+  # --- Return ---
   #---------------------------------------------------------------------
   class(ret) <- c("summaryAlphaPart", class(ret))
   ret
@@ -502,12 +504,12 @@ plot.summaryAlphaPart <-
             )
   {
     #-------------------------------------------------------------------
-    ## --- Setup ---
+    # --- Setup ---
     #-------------------------------------------------------------------
     if (!inherits(x, "summaryAlphaPart")) stop("'x' must be of a summaryAlphaPart class")
 
     by    <- x$info$by
-    ## by argument
+    # by argument
     if(is.null(by)) stop("output is provided only when the 'by' argument is defined on the 'summary' function")
     path  <- x$info$path
     lT    <- x$info$lT
@@ -516,16 +518,16 @@ plot.summaryAlphaPart <-
     ret   <- vector(mode="list", length=nT)
     names(ret) <- x$info$lT
 
-    ## Axis labels
+    # Axis labels
     if (!is.null(xlab) && length(xlab) > 1) stop("you can provide only one value for 'xlab'")
     if (!is.null(ylab) && length(ylab) < nT) ylab <- rep(ylab, length=nT)
 
-    ## Colors
+    # Colors
     if (!missing(color)) {
       if (length(color) < nP) color <- rep(color, length=nP)
       color <- c("black", color)
     } else {
-      if (FALSE) { ## Code to generate a bunch of qualitative colors
+      if (FALSE) { # Code to generate a bunch of qualitative colors
         requireNamespace("RColorBrewer")
         #library(package="RColorBrewer")
         pals <- c("Set1", "Dark2", "Accent", "Paired", "Set2", "Set3")
@@ -551,10 +553,10 @@ plot.summaryAlphaPart <-
                  "#FFD92F", "#E5C494", "#B3B3B3", "#8DD3C7", "#FFFFB3",
                  "#BEBADA", "#FB8072", "#80B1D3", "#FDB462", "#B3DE69",
                  "#FCCDE5", "#D9D9D9", "#BC80BD", "#CCEBC5", "#FFED6F")
-    color <- color[color != "#FFFF33"] ## remove yellow color(s)
+    color <- color[color != "#FFFF33"] # remove yellow color(s)
     }
     #-------------------------------------------------------------------
-    ## Line type
+    # Line type
     if (is.null(lineTypeList)) {
       if (length(lineType) < nP) {
         lineType <- c(1, rep(x=lineType, times=nP))
@@ -563,17 +565,17 @@ plot.summaryAlphaPart <-
       }
   }
     #-------------------------------------------------------------------
-    ## --- Create plots ---
+    # --- Create plots ---
     #-------------------------------------------------------------------
-    ## Ylim
+    # Ylim
     ylimT <- ylim
 
-    for (i in 1:nT) { ## loop over traits
+    for (i in 1:nT) { # loop over traits
       colorI <- color
       lineTypeI <- lineType
-      ## Prepare data
+      # Prepare data
       tmp0 <- x[[i]]
-    ## Make sure that path has a name "N"
+      # Make sure that path has a name "N"
       tmpCol <- colnames(tmp0)
       test <- tmpCol %in% "N"
       if (sum(test) > 1) {
@@ -590,12 +592,12 @@ plot.summaryAlphaPart <-
                              na.rm=TRUE)
           levs <- names(sort(pathStat, decreasing=sortValueDec))
           tmp$path <- factor(tmp$path, levels=c(x$info$labelSum, levs))
-          if (!is.null(lineTypeList)) { ## fiddle with upper (color) and lower (line type) level of paths
+          if (!is.null(lineTypeList)) { # fiddle with upper (color) and lower (line type) level of paths
             levs2X <- names(lineTypeList); levs2X <-
                                              levs2X[levs2X != "def"]
             levs1 <- levs2 <- levs
             for (k in levs2X) {
-              j <- paste(k, "$", sep="") ## lower label mark needs to be at the end of path name!!!
+              j <- paste(k, "$", sep="") # lower label mark needs to be at the end of path name!!!
               levs2[grep(pattern=j, x=levs1)] <- k
               levs1 <- sub(pattern=j, replacement="", x=levs1)
             }
@@ -613,7 +615,7 @@ plot.summaryAlphaPart <-
       tmp$path <- factor(tmp$path, levels=c(x$info$labelSum, sortValue))
     }
       #-----------------------------------------------------------------
-      ## Prepare plot
+      # Prepare plot
       #trait in "" since it is not defined
       #-----------------------------------------------------------------
     trait <- tmp$trait
@@ -644,7 +646,7 @@ plot.summaryAlphaPart <-
       if (useDirectLabels) p <- directlabels::direct.label(p=p,
                                                            method=method)
       #-----------------------------------------------------------------
-      ## This needs to follow direct.label
+      # This needs to follow direct.label
       #-----------------------------------------------------------------
       p <- p + scale_colour_manual(values=colorI,
                                    name=ifelse(is.null(labelPath), path,
@@ -656,7 +658,7 @@ plot.summaryAlphaPart <-
      
     }
     #-------------------------------------------------------------------
-    ## --- Return ---
+    # --- Return ---
     #-------------------------------------------------------------------
     class(ret) <- c("plotSummaryAlphaPart", class(ret))
     ret
@@ -723,14 +725,14 @@ savePlot  <- function (...)    {
 #' @export
 
 savePlot.plotSummaryAlphaPart <- function(
-  x,                                           ##<< plotSummaryAlphaPart, output object from
-                                               ## \code{\link[AlphaPart]{plot.summaryAlphaPart}} function
-  filename=paste("Rplot", type, sep="."),      ##<< character, filename to save to
-  type=c("pdf", "png", "jpeg", "tiff", "bmp"), ##<< character, file/device type
-  device=dev.cur(),                            ##<< device, the device to save from (not used for this method)
-  pre.hook=NULL,                               ##<<
-  traitsAsDir=FALSE,                           ##<<
-  ...                                          ##<<
+  x,                                           #<< plotSummaryAlphaPart, output object from
+                                               # \code{\link[AlphaPart]{plot.summaryAlphaPart}} function
+  filename=paste("Rplot", type, sep="."),      #<< character, filename to save to
+  type=c("pdf", "png", "jpeg", "tiff", "bmp"), #<< character, file/device type
+  device=dev.cur(),                            #<< device, the device to save from (not used for this method)
+  pre.hook=NULL,                               #<<
+  traitsAsDir=FALSE,                           #<<
+  ...                                          #<<
 ) {
   if (length(filename) > 1) stop("'filename' argument must be of length one")
   if (!inherits(x, "plotSummaryAlphaPart")) stop("'x' must be of a 'plotSummaryAlphaPart' class")
@@ -754,7 +756,7 @@ savePlot.plotSummaryAlphaPart <- function(
    
   }
   #---------------------------------------------------------------------
-  ## --- Return ---
+  # --- Return ---
   #---------------------------------------------------------------------
   invisible(ret)
 }
@@ -766,145 +768,11 @@ savePlot.plotSummaryAlphaPart <- function(
 
 savePlot.default <- function(...) {
 
-  ##seealso<< \code{\link[grDevices]{savePlot}} help page on the default
-  ## \code{savePlot} method in the \pkg{grDevices} package
+  #seealso<< \code{\link[grDevices]{savePlot}} help page on the default
+  # \code{savePlot} method in the \pkg{grDevices} package
 
   grDevices::savePlot(...)
 
-  ##value<< See \code{\link[grDevices]{savePlot}} for details.
+  #value<< See \code{\link[grDevices]{savePlot}} for details.
 
-}
-
-#=======================================================================
-# center base population
-#=======================================================================
-#' @title Calculate parent average for base population.
-#' @description This is an internally called functions used to calculate 
-#' parent average for base population.
-#' 
-#' @usage NULL
-#' 
-#' @seealso
-#' \code{\link[AlphaPart]{AlphaPart}}
-#'
-#' @author Thiago de Paula Oliveira
-#' 
-#' @keywords internal
-#' @importFrom stats lm confint
-#' @export
-
-centerPop <- function(y, colBV, path){
-  #---------------------------------------------------------------------
-  # Selecting founders and missing pedigree animals
-  #---------------------------------------------------------------------
-  colBV <- (ncol(y)-length(colBV)+1):ncol(y)
-  if(length(colBV)==1){
-    tmp <- as.matrix(y[c(y[, 2]==0 & y[,3]==0), colBV])
-  }else{
-    tmp <- y[c(y[, 2]==0 & y[,3]==0), colBV]
-  }
-  baseMean <- colMeans(tmp, na.rm = TRUE)
-  #---------------------------------------------------------------------
-  # Decision criteria
-  #---------------------------------------------------------------------
-  basePop <- apply(y[,c(2,3)]==0,1,all)
-  for (i in seq_len(ncol(tmp))){
-    if(all(confint(lm(tmp[,i] ~ 1), level=0.95)>0)){
-      path$w[-1,i] <- path$w[-1, i] - basePop * baseMean[i]
-      path$pa[-1, i] <- path$pa[-1, i] + basePop * y[, colBV[i]] -
-        path$w[-1, i] * basePop
-    }
-  }
-  return(path)
-}
-
-#=======================================================================
-# Scaling EBVs
-#=======================================================================
-#' @title Scale EBVs for objects of the class summaryAlphaPart.
-#' @description   This is an internally called functions used to Scale 
-#' EBVs in respect to base population for objects of the class 
-#' \code{AlphaPart}.
-#' 
-#' @usage NULL
-#' 
-#' @seealso
-#' \code{\link[AlphaPart]{AlphaPart}}
-#'
-#' @author Thiago de Paula Oliveira
-#' 
-#' @keywords internal
-#' @importFrom stats sd
-#' @export
-
-sEBV <- function(y, center, scale, recode, unknown){
-  id. <- 1
-  fid. <- 2
-  mid. <- 3
-  if (recode) {
-    y[,id.:mid.] <- cbind(id=seq_len(nrow(y)),
-                     fid=match(y[, fid.], y[, id.], nomatch=0),
-                     mid=match(y[, mid.], y[, id.], nomatch=0))
-  } else {
-    ## Make sure we have 0 when recoded data is provided
-    if (is.na(unknown)) {
-      y[, c(fid., mid.)] <- NAToUnknown(x=y[, c(fid., mid.)], unknown=0)
-    } else {
-      if (unknown != 0)  {
-        y[, c(fid., mid.)] <-
-          NAToUnknown(x=unknownToNA(x=y[, c(fid., mid.)],
-                                    unknown=unknown), unknown=0)
-      }
-    }
-  }
-  #---------------------------------------------------------------------
-  # Selecting founders and missing pedigree animals
-  #---------------------------------------------------------------------
-  if(ncol(y)==(mid.+1)){
-    tmp <- as.matrix(y[c(y[, fid.]==0 & y[, mid.]==0), -c(id.:mid.)])
-    y <- as.matrix(y[, -c(id.:mid.)])    
-  }else{
-    tmp <- y[c(y[, fid.]==0 & y[, mid.]==0), -c(id.:mid.)]
-    y <- y[, -c(id.:mid.)]
-  }
-  #---------------------------------------------------------------------
-  # Centering
-  #---------------------------------------------------------------------
-  if(is.logical(center)){
-    if(center){
-      center <- colMeans(tmp, na.rm = TRUE)
-      y <- y - 
-        rep(center, rep.int(nrow(y), ncol(y)))
-    }
-  }
-  #---------------------------------------------------------------------
-  # Scaling
-  #---------------------------------------------------------------------  
-  if(is.logical(scale)){
-    if(scale) {
-      f <- function(x) {
-        sd(x, na.rm = TRUE)
-      }
-      scale <- apply(tmp, 2L, f)
-      y  <- y / 
-        rep(scale, rep.int(nrow(y), ncol(y)))
-    }
-  }
-  return(y)
-}  
-
-#' @title Get scale information
-#' @description   This is an internally called function 
-#' 
-#' @usage NULL
-#' 
-#' @seealso
-#' \code{\link[AlphaPart]{AlphaPart}}
-#'
-#' @author Thiago de Paula Oliveira
-#' 
-#' @keywords internal
-#' @export
-getScale <- function(center = FALSE, scale = FALSE, ...){
-  list(center = center, scale = scale, ...)
 }
