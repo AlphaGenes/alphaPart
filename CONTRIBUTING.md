@@ -36,7 +36,7 @@ We encourage people from opening an issue to ask a question or report a bug.
 
 AlphaPart is an open-source project. When you initially consider contributing to AlphaPart, you might be sure about using the AlphaGenes/AlphaPart repository to implement the functionality you want to change or report a bug. This section should help you with that.
 
-AlphaPart has intentionally coded using standard `R` to build the base idea and `C++` using the `Rcpp` package to speed up the analysis.  `R` code can be founded in the usual `R` folder while `C++` is in the `scr` folder.
+AlphaPart has intentionally coded using standard `R` to build the base idea and `C++` using the `Rcpp` package to speed up the analysis.`R` code can be founded in the usual `R` folder while `C++` is in the `src` folder.
 
 ### Design Decisions
 
@@ -91,5 +91,3 @@ You can use the GitHub user interface for minor changes, such as fixing a typo o
 Once your PR is successfully merged, you will be proudly listed as a contributor in the [contributor chart](https://github.com/AlphaGenes/AlphaPart/graphs/contributors).
 
 -----
-
-

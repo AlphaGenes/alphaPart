@@ -7,7 +7,7 @@ SEXP AlphaPartDrop(SEXP c1_, SEXP c2_, SEXP nI_, SEXP nP_, SEXP nT_, SEXP y_, SE
 
   // --- Temp ---
       
-  int i, j, k, t, p;
+  int i, j, t, p;
   
   // --- Inputs ---
       
@@ -22,12 +22,12 @@ SEXP AlphaPartDrop(SEXP c1_, SEXP c2_, SEXP nI_, SEXP nP_, SEXP nT_, SEXP y_, SE
   
   // --- Outputs ---
       
-  Rcpp::NumericMatrix pa(nI+1, nT);    // parent average
-  Rcpp::NumericMatrix  w(nI+1, nT);    // Mendelian sampling
-  Rcpp::NumericMatrix xa(nI+1, nP*nT); // Parts
-
+  Rcpp::NumericMatrix pa(nI+1, nT);    // parent average (filled with 0)
+  Rcpp::NumericMatrix ms(nI+1, nT);    // Mendelian sampling (filled with 0)
+  Rcpp::NumericMatrix xa(nI+1, nP*nT); // Partitions (filled with 0)
+  
   // --- Compute ---
-      
+  
   for(i = 1; i < nI+1; i++) {
     for(t = 0; t < nT; t++) {
       // Parent average (PA)
@@ -35,13 +35,13 @@ SEXP AlphaPartDrop(SEXP c1_, SEXP c2_, SEXP nI_, SEXP nP_, SEXP nT_, SEXP y_, SE
                  c2 * ped(ped(i, 2), 3+t);
     
       // Mendelian sampling (MS)
-      w(i, t) = ped(i, 3+t) - pa(i, t);
+      ms(i, t) = ped(i, 3+t) - pa(i, t);
     
       // Parts
 
       // ... for the MS part
       j = Px[t] + P[i];
-      xa(i, j) = w(i, t);
+      xa(i, j) = ms(i, t);
 
       // ... for the PA parts
       for(p = 0; p < nP; p++) {
@@ -55,6 +55,6 @@ SEXP AlphaPartDrop(SEXP c1_, SEXP c2_, SEXP nI_, SEXP nP_, SEXP nT_, SEXP y_, SE
   // --- Return ---
 
   return Rcpp::List::create(Rcpp::Named("pa", pa),
-                            Rcpp::Named("w",  w),
+                            Rcpp::Named("ms", ms),
                             Rcpp::Named("xa", xa));
 }
