@@ -60,17 +60,17 @@ so that one can define \code{write.csv} methods for other objects.
 }
 \section{Methods (by class)}{
 \itemize{
-\item \code{default}: Default \code{write.csv} method.
+\item \code{write.csv(default)}: Default \code{write.csv} method.
 
-\item \code{AlphaPart}: Save partitioned breeding values to CSV files on disk on disk for further
+\item \code{write.csv(AlphaPart)}: Save partitioned breeding values to CSV files on disk on disk for further
 analyses or processing with other software or just for saving (backing up)
 results.
 
-\item \code{summaryAlphaPart}: Save summaries of partitioned breeding values to CSV files on disk for further
+\item \code{write.csv(summaryAlphaPart)}: Save summaries of partitioned breeding values to CSV files on disk for further
 analyses of processing with other software or just for saving (backing up)
 results.
-}}
 
+}}
 \examples{
 ## Partition additive genetic values
 res <- AlphaPart(x=AlphaPart.ped, colPath="country", colBV=c("bv1", "bv2"))

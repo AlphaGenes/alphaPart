@@ -66,21 +66,6 @@ column(s) holding breeding Values.}
 
 \item{colBy}{Numeric or character, position or name of a column
 holding group information (see details).}
-
-\item{center}{Logical, if \code{center=TRUE} detect a shift in base
-population mean and attributes it as parent average effect rather
-than Mendelian sampling effect, otherwise, if center=FALSE, the base
-population values are only accounted as Mendelian sampling
-effect. Default is \code{center = TRUE}.}
-
-\item{scaleEBV}{a list with two arguments defining whether is
-appropriate to center and/or scale the \code{colBV} columns in respect to
-the base population. The list may contain the following components:
-\itemize{
-\item \code{center}: a logical value
-\item \code{scale}: a logical value. If \code{center = TRUE} and \code{scale = TRUE} then the
-base population is set to has zero mean and unit variance.
-}}
 }
 \value{
 An object of class \code{AlphaPart}, which can be used in
@@ -88,14 +73,14 @@ further analyses - there is a handy summary method
 (\code{\link[AlphaPart]{summary.AlphaPart}} works on objects of
 \code{AlphaPart} class) and a plot method for its output
 (\code{\link[AlphaPart]{plot.summaryAlphaPart}} works on objects of
-\code{summaryAlphaPart} class).  Class \code{AlphaPart} is a
+\code{summaryAlphaPart} class). Class \code{AlphaPart} is a
 list. The first \code{length(colBV)} components (one for each trait
 and named with trait label, say trt) are data frames. Each
 data.frame contains:
 \itemize{
 \item \code{x} columns from initial data \code{x}
 \item \code{trt_pa} parent average
-\item \code{trt_w}Mendelian sampling term
+\item \code{trt_ms} Mendelian sampling term
 \item \verb{trt_path1, trt_path2, ...} breeding value partitions
 }
 
@@ -116,7 +101,7 @@ If \code{colBy!=NULL} the resulting object is of a class
 \code{\link[AlphaPart]{summary.AlphaPart}} for details.
 
 If \code{profile=TRUE}, profiling info is printed on screen to spot
-any computational bottlenecks.
+computational bottlenecks.
 }
 \description{
 A function to partition breeding values by a path

@@ -1,6 +1,6 @@
 #include "AlphaPartDrop.h"
 
-SEXP AlphaPartDrop(SEXP c1_, SEXP c2_, SEXP nI_, SEXP nP_, SEXP nT_, SEXP y_, SEXP P_, SEXP Px_)
+SEXP AlphaPartDrop(SEXP c1_, SEXP c2_, SEXP nI_, SEXP nP_, SEXP nT_, SEXP y_, SEXP P_, SEXP Px_, SEXP meanOfFounders_)
 {
   using namespace Rcpp ;
   //' @export
@@ -11,20 +11,36 @@ SEXP AlphaPartDrop(SEXP c1_, SEXP c2_, SEXP nI_, SEXP nP_, SEXP nT_, SEXP y_, SE
   
   // --- Inputs ---
       
-  double c1 = Rcpp::as<double>(c1_);  
-  double c2 = Rcpp::as<double>(c2_); 
-  int nI = Rcpp::as<int>(nI_); 
+  double c1 = Rcpp::as<double>(c1_);
+  double c2 = Rcpp::as<double>(c2_);
+  int nI = Rcpp::as<int>(nI_);
   int nP = Rcpp::as<int>(nP_);
   int nT = Rcpp::as<int>(nT_);
   Rcpp::NumericMatrix ped(y_);
-  Rcpp::IntegerVector P(P_);  
+  Rcpp::IntegerVector P(P_);
   Rcpp::IntegerVector Px(Px_);
+  Rcpp::NumericVector meanOfFounders(meanOfFounders_);
   
   // --- Outputs ---
-      
-  Rcpp::NumericMatrix pa(nI+1, nT);    // parent average (filled with 0)
-  Rcpp::NumericMatrix ms(nI+1, nT);    // Mendelian sampling (filled with 0)
-  Rcpp::NumericMatrix xa(nI+1, nP*nT); // Partitions (filled with 0)
+  
+  // Parent average (filled with 0)
+  Rcpp::NumericMatrix pa(nI+1, nT);
+  // Mendelian sampling (filled with 0)
+  Rcpp::NumericMatrix ms(nI+1, nT);
+  // Partitions (filled with 0)
+  Rcpp::NumericMatrix xa(nI+1, nP*nT);
+  // TODO: Maybe we want an algorithm that works on one trait at a time to save 
+  //       on memory?
+  //       https://github.com/AlphaGenes/AlphaPart/issues/15
+  for(i = 1; i < nI+1; i++) {
+    for(t = 0; t < nT; t++) {
+      for(p = 0; p < nP; p++) {
+        j = Px[t] + p;
+        //xa(i, j) = meanOfFounders(t);
+        xa(i, j) = 0.0;
+      }
+    }
+  }
   
   // --- Compute ---
   

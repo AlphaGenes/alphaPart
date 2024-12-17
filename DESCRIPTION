@@ -44,7 +44,7 @@ Date: 2022-11-13
 NeedsCompilation: yes
 Packaged: 2022-07-07 19:36:37 UTC
 VignetteBuilder: knitr
-RoxygenNote: 7.1.2.9000
+RoxygenNote: 7.3.2
 Encoding: UTF-8
 LazyData: true
 Config/testthat/edition: 3

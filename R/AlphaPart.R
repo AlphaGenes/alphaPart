@@ -314,7 +314,7 @@ AlphaPart <- function (x, pathNA=FALSE, recode=TRUE, unknown=NA,
   nI <- nrow(x)
   #---------------------------------------------------------------------
   # Traits
-  lT <- colnames(x[, colBV, drop=FALSE])
+  lT <- colnames(x[1, colBV, drop=FALSE])
   nT <- length(lT) # number of traits
   #---------------------------------------------------------------------
   # Missing values
@@ -332,7 +332,9 @@ AlphaPart <- function (x, pathNA=FALSE, recode=TRUE, unknown=NA,
       stop("unknown (missing) value for path not allowed; use 'pathNA=TRUE'")
     }
   }
-  if (!is.factor(x[, colPath])) x[, colPath] <- factor(x[, colPath])
+  if (!is.factor(x[, colPath])) {
+    x[, colPath] <- factor(x[, colPath])
+  }
   lP <- levels(x[, colPath])
   nP <- length(lP) # number of paths
   P <- as.integer(x[, colPath]) - 1
@@ -381,20 +383,23 @@ AlphaPart <- function (x, pathNA=FALSE, recode=TRUE, unknown=NA,
   #=====================================================================
   # Centering (implicitly assumed in the AlphaPartDrop() algorithm!)
   # TODO: how should we handle half-founders?
-  #.      https://github.com/AlphaGenes/AlphaPart/issues/9
-  selBasePop <- y[, colFid] == 0 & y[, colMid] == 0
-  meanBasePop <- colMeans(x[selBasePop, colBV, drop = FALSE])
+  #       https://github.com/AlphaGenes/AlphaPart/issues/9
+  selFounders <- y[, colFid] == 0 & y[, colMid] == 0
+  meanOfFounders <- colMeans(x[selFounders, colBV, drop = FALSE])
+  names(meanOfFounders) <- lT
   y <- cbind(y, as.matrix(x[, colBV]))
   colnames(y)[4:ncol(y)] <- lT
-  for (trt in colBV) {
-    y[, trt] <- y[, trt] - meanBasePop[trt]
-  }
+  # TODO: remove this lool
+  # for (trt in lT) {
+  #   y[, trt] <- y[, trt] - meanOfFounders[trt]
+  # }
   #---------------------------------------------------------------------  
   # Prepare for C++
   c1 <- c2 <- 0.5
   if (pedType == "IPG") c2 <- 0.25
   # Add "zero" row (simplifies computations with missing parents!) - this
   #   assumes that the base population mean is 0 so must centre above!
+  # TODO: revise the above text - we think it's just for PA
   y <- rbind(y[1, ], y)
   y[1, ] <- 0
   rownames(x) <- NULL
@@ -412,6 +417,7 @@ AlphaPart <- function (x, pathNA=FALSE, recode=TRUE, unknown=NA,
                  nI_=nI, nP_=nP, nT_=nT,
                  y_=y, 
                  P_=P, Px_=cumsum(c(0, rep(nP, nT-1))),
+                 meanOfFounders_=meanOfFounders,
                  PACKAGE="AlphaPart")
   } else {
     N <- aggregate(x=y[-1, -c(1:3)], by=list(by=x[, colBy]), FUN=length)
@@ -446,7 +452,7 @@ AlphaPart <- function (x, pathNA=FALSE, recode=TRUE, unknown=NA,
   colW <- colnames(tmp$ms)
   colX <- colnames(tmp$xa)
   #---------------------------------------------------------------------
-  # TODO: Recentre, but how? Add meanBasePop to MS for founders and then
+  # TODO: Recentre, but how? Add meanOfFounders to MS for founders and then
   #   to PA for all non-founders?
   #   path$w[-1,i] <- path$w[-1, i] - basePop * baseMean[i]
   #   path$pa[-1, i] <- path$pa[-1, i] + basePop * y[, colBV[i]] -
@@ -457,8 +463,8 @@ AlphaPart <- function (x, pathNA=FALSE, recode=TRUE, unknown=NA,
   #       https://github.com/AlphaGenes/AlphaPart/issues/9
   for (j in 1:nT) { # j <- 1
     Py <- seq(t+1, t+nP)
-    ret[[j]] <- cbind(tmp$pa[-1, j] + !selBasePop * meanBasePop[j],
-                      tmp$ms[-1, j] +  selBasePop * meanBasePop[j],
+    ret[[j]] <- cbind(tmp$pa[-1, j], # + !selFounders * meanOfFounders[j],
+                      tmp$ms[-1, j], # +  selFounders * meanOfFounders[j],
                       tmp$xa[-1, Py])
     colnames(ret[[j]]) <- c(colP[j], colW[j], colX[Py])
     
